@@ -1,3 +1,9 @@
+/*
+ * Thank you : p0n3
+ * https://p0n3.net/air-quality-sensor-first-tests/
+ * 
+*/
+
 #include <stdio.h>
 #include <Adafruit_GFX.h>
 #include "Adafruit_LEDBackpack.h"
