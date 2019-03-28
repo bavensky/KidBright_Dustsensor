@@ -1,12 +1,20 @@
 /*
- * Thank you : p0n3
- * https://p0n3.net/air-quality-sensor-first-tests/
- * 
-*/
+   Thank you : p0n3
+   https://p0n3.net/air-quality-sensor-first-tests/
 
+*/
+#include <WiFi.h>;
+#include <HTTPClient.h>;
 #include <stdio.h>
 #include <Adafruit_GFX.h>
 #include "Adafruit_LEDBackpack.h"
+
+const char* ssid = "ampere";
+const char* password =  "espertap";
+
+const char* ifttt_event =  "KB_dust_sheet";
+const char* ifttt_key =  "cTeceGLklSgEuOqrnnO1by";
+
 
 #define MATRIX_ADDR 0x70    // แอดเดรสของ LED Matrix 8x16
 Adafruit_8x16minimatrix matrix = Adafruit_8x16minimatrix();
@@ -35,7 +43,29 @@ const int buzzer_Pin =  13;     //  ขาใช้งาน Buzzer
 const int ldr_Pin = 36;         //  ขาใช้งาน LDR sensor
 
 uint32_t pevTime = 0;
-const long interval = 10 * 1000;
+const long interval = 5 * 1000;
+
+void iftttPost(String value1, String value2, String value3) {
+  HTTPClient http;
+
+  http.begin("https://maker.ifttt.com/trigger/" + String(ifttt_event) + "/with/key/" + String(ifttt_key));
+  http.addHeader("Content-Type", "application/json");
+
+  // HTTP POST Format = {"value1":"hello","value2":"super","value3":"man"}
+  String postData = "{\"value1\":\"" + String(value1) + "\",\"value2\":\"" + String(value2) + "\",\"value3\":\"" + String(value3) + "\"}";
+  int httpResponseCode = http.POST(postData);
+
+  if (httpResponseCode > 0) {
+    String response = http.getString();
+    Serial.println(httpResponseCode);
+    Serial.println(response);
+  } else {
+    Serial.print("Error on sending POST: ");
+    Serial.println(httpResponseCode);
+  }
+  http.end();
+  delay(2000);
+}
 
 int read_LDR() {
   const int ldr_Low = 0;      //  ค่าน้อยที่สุดที่อ่านได้จาก LDR sensor
@@ -94,6 +124,7 @@ void readPM3003() {
 
   if (buffer[0] == 0x4d)
   {
+    Serial.println("data ok...");
     if (checkValue(buffer, NUMBER_OF_BYTE))
     {
       PM25 = ((buffer[5] << 8) + buffer[6]);
@@ -138,13 +169,12 @@ void setup() {
 }
 
 void loop() {
-  if (millis() - pevTime >= interval)
+  if (millis() - pevTime >= 5000)
   {
     pevTime = millis();
 
-    //    pm3003();
     readPM3003();
-    
+
     Serial.print("pm1 atmosphere: "); Serial.println(PM1a);
     Serial.print("pm2.5 atmosphere: "); Serial.println(PM25a);
     Serial.print("pm10 atmosphere: "); Serial.println(PM10a);
@@ -154,10 +184,14 @@ void loop() {
     Serial.print("pm10: "); Serial.println(PM10);
     Serial.println();
     Serial.println();
-    
+
     matrix.clear();
     matrix.setCursor(0, 0);
-    matrix.print(PM25);
+    matrix.print(PM25a);
     matrix.writeDisplay();
+
+    //     send to ifttt spredsheet
+    //    iftttPost(String("PM.25"), String(PM25), String("null"));
+    //    delay(2000);
   }
 }
